@@ -1,0 +1,32 @@
+# deps
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# DB + uploads
+curl-iq.db
+curl-iq.db-journal
+curl-iq.db-shm
+curl-iq.db-wal
+public/uploads/
+
+# env
+.env
+.env.local
+.env.*.local
+
+# Stitch output
+stitch-output/
+
+# TypeScript
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test scripts
+test-fork.js
