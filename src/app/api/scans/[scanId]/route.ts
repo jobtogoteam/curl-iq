@@ -26,7 +26,7 @@ export async function GET(
     const products = db
       .select()
       .from(productRecommendations)
-      .where(eq(productRecommendations.scanId, scanId))
+      .where(and(eq(productRecommendations.scanId, scanId), eq(productRecommendations.userId, session.userId)))
       .orderBy(asc(productRecommendations.priority))
       .all();
 

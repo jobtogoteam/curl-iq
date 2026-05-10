@@ -8,7 +8,31 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-export async function analyzeHair(imagePath: string): Promise<HairAnalysis> {
+// Claude Sonnet 4.6 pricing per token
+const PRICING = {
+  input:      3.00  / 1_000_000,
+  output:     15.00 / 1_000_000,
+  cacheWrite: 3.75  / 1_000_000,
+  cacheRead:  0.30  / 1_000_000,
+};
+
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheWriteTokens: number;
+  cacheReadTokens: number;
+  estimatedCostUsd: number;
+}
+
+export interface HairAnalysisResult {
+  analysis: HairAnalysis;
+  usage: TokenUsage;
+}
+
+export async function analyzeHair(imagePath: string): Promise<HairAnalysisResult> {
+  if (!imagePath.startsWith("uploads/") || imagePath.includes("..")) {
+    throw new Error("Invalid image path");
+  }
   const absolutePath = path.join(process.cwd(), "public", imagePath);
   const imageBuffer = fs.readFileSync(absolutePath);
   const base64Image = imageBuffer.toString("base64");
@@ -63,11 +87,32 @@ export async function analyzeHair(imagePath: string): Promise<HairAnalysis> {
   try {
     parsed = JSON.parse(cleaned);
   } catch {
-    throw new Error(`Claude returned invalid JSON. Raw response: ${rawText.slice(0, 200)}`);
+    throw new Error("AI returned an invalid response format");
   }
 
   validateHairAnalysis(parsed);
-  return parsed;
+
+  // Capture token usage and compute estimated cost
+  const u = response.usage as {
+    input_tokens: number;
+    output_tokens: number;
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+  };
+  const inputTokens      = u.input_tokens ?? 0;
+  const outputTokens     = u.output_tokens ?? 0;
+  const cacheWriteTokens = u.cache_creation_input_tokens ?? 0;
+  const cacheReadTokens  = u.cache_read_input_tokens ?? 0;
+  const estimatedCostUsd =
+    inputTokens      * PRICING.input +
+    outputTokens     * PRICING.output +
+    cacheWriteTokens * PRICING.cacheWrite +
+    cacheReadTokens  * PRICING.cacheRead;
+
+  return {
+    analysis: parsed,
+    usage: { inputTokens, outputTokens, cacheWriteTokens, cacheReadTokens, estimatedCostUsd },
+  };
 }
 
 const REQUIRED_FIELDS: (keyof HairAnalysis)[] = [

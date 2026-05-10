@@ -9,13 +9,18 @@ export interface SessionData {
   hairGoals?: string[];
 }
 
+const secret = process.env.SESSION_SECRET;
+if (!secret || secret.length < 32) {
+  throw new Error("SESSION_SECRET must be at least 32 characters");
+}
+
 const sessionOptions: SessionOptions = {
-  password: process.env.SESSION_SECRET!,
+  password: secret,
   cookieName: "curl-iq-session",
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "strict",
     maxAge: 60 * 60 * 24 * 30, // 30 days
   },
 };
