@@ -7,14 +7,16 @@ export function CurlIQLogo({
   variant?: "dark" | "light";
 }) {
   return (
-    <Image
-      src="/logo.png"
-      alt="Curl IQ"
-      width={size}
-      height={size}
-      style={{ borderRadius: "50%" }}
-      priority
-    />
+    <div style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
+      <Image
+        src="/logo.png"
+        alt="Curl IQ"
+        width={size}
+        height={size}
+        style={{ objectFit: "cover", objectPosition: "center", width: "100%", height: "100%" }}
+        priority
+      />
+    </div>
   );
 }
 

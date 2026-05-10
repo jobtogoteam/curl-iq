@@ -75,7 +75,7 @@ export default async function HistoryPage() {
       {/* Scan grid */}
       {allScans.length === 0 ? (
         <EmptyState
-          icon={Camera}
+          icon={<Camera size={26} style={{ color: "var(--text-tertiary)" }} strokeWidth={1.5} />}
           title="No scans yet"
           description="Take your first scan to start tracking your hair health over time."
           cta={{ label: "Take a scan", href: "/scan" }}

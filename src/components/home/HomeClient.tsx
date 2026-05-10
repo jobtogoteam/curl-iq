@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Camera, Sparkles, ChevronRight, ArrowUpRight, TrendingUp } from "lucide-react";
+import { Camera, Sparkles, ChevronRight, ArrowUpRight, TrendingUp, ReceiptText } from "lucide-react";
 import { fadeUp, staggerContainer, smooth, useMotion } from "@/lib/motion";
 import { MetricBar } from "@/components/scan/MetricBar";
 import { ProductCard } from "@/components/products/ProductCard";
@@ -68,7 +68,21 @@ export function HomeClient({
             </p>
           )}
         </div>
-        <CurlIQWordmark size={26} variant="dark" />
+        <div className="flex flex-col items-end gap-2">
+          <CurlIQWordmark size={26} variant="dark" />
+          <Link
+            href="/costs"
+            className="flex items-center gap-1 px-2 py-1 rounded-lg"
+            style={{
+              background: "var(--surface-3)",
+              border: "1px solid var(--border)",
+              color: "var(--text-tertiary)",
+            }}
+          >
+            <ReceiptText size={11} />
+            <span className="text-[10px] font-medium">API costs</span>
+          </Link>
+        </div>
       </motion.div>
 
       {latestScan ? (

@@ -60,6 +60,12 @@ export const scans = sqliteTable("scans", {
   ingredientsToSeek: text("ingredients_to_seek"), // JSON array
   aiSummary: text("ai_summary"),
   aiRawResponse: text("ai_raw_response"),
+  // Token usage & cost tracking
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  cacheWriteTokens: integer("cache_write_tokens"),
+  cacheReadTokens: integer("cache_read_tokens"),
+  estimatedCostUsd: real("estimated_cost_usd"),
   createdAt: integer("created_at").notNull(),
 });
 

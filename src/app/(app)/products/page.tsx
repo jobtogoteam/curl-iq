@@ -92,7 +92,7 @@ export default function ProductsPage() {
         </div>
       ) : products.length === 0 ? (
         <EmptyState
-          icon={ShoppingBag}
+          icon={<ShoppingBag size={26} style={{ color: "var(--text-tertiary)" }} strokeWidth={1.5} />}
           title="No recommendations yet"
           description="Take a scan to get personalised product recommendations for your curl type."
           cta={{ label: "Take a scan", href: "/scan" }}

@@ -76,18 +76,43 @@ export async function analyzeHair(imagePath: string): Promise<HairAnalysisResult
         ],
       },
     ],
-  }, { timeout: 45_000 });
+  }, { timeout: 90_000 });
 
   const rawText = response.content[0].type === "text" ? response.content[0].text : "";
 
-  // Strip markdown code fences if Claude wrapped the JSON
-  const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  // Log stop reason and raw length to diagnose truncation
+  console.error("[analyzeHair] stop_reason:", response.stop_reason, "| raw chars:", rawText.length);
+  if (response.stop_reason === "max_tokens") {
+    console.error("[analyzeHair] TRUNCATED — response hit max_tokens limit");
+  }
+
+  // Extract the JSON object regardless of surrounding prose or code fences
+  const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    console.error("[analyzeHair] No JSON object found in response. Raw:\n", rawText.slice(0, 500));
+    throw new Error("We couldn't read the AI response. Please try again.");
+  }
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(cleaned);
-  } catch {
-    throw new Error("AI returned an invalid response format");
+    parsed = JSON.parse(jsonMatch[0]);
+  } catch (e) {
+    console.error("[analyzeHair] JSON.parse failed:", e, "\nExtracted:\n", jsonMatch[0].slice(-300));
+    throw new Error("We couldn't read the AI response. Please try again.");
+  }
+
+  // Graceful decline: image not suitable for hair analysis
+  if (
+    typeof parsed === "object" &&
+    parsed !== null &&
+    (parsed as Record<string, unknown>).can_analyze === false
+  ) {
+    const reason = (parsed as Record<string, unknown>).cannot_analyze_reason;
+    throw new Error(
+      typeof reason === "string" && reason.length > 0
+        ? reason
+        : "We couldn't detect hair in this photo. Please try a clear, close-up shot of your hair."
+    );
   }
 
   validateHairAnalysis(parsed);

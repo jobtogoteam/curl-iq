@@ -6,10 +6,9 @@ import { scans, productRecommendations } from "@/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { and, eq, asc } from "drizzle-orm";
-import { WashStateBadge } from "@/components/scan/WashStateBadge";
 import { ScanResultClient } from "@/components/scan/ScanResultClient";
 import { ArrowLeft } from "lucide-react";
-import type { CurlType, WashState, ProteinMoistureBalance, RoutineStep } from "@/types/hair";
+import type { CurlType, ProteinMoistureBalance, RoutineStep } from "@/types/hair";
 
 export default async function ScanResultPage({
   params,
@@ -37,11 +36,7 @@ export default async function ScanResultPage({
 
   // Parse JSON fields safely
   let routineSteps: RoutineStep[] = [];
-  let ingredientsToAvoid: string[] = [];
-  let ingredientsToSeek: string[] = [];
   try { if (scan.routineSteps) routineSteps = JSON.parse(scan.routineSteps); } catch { /* no-op */ }
-  try { if (scan.ingredientsToAvoid) ingredientsToAvoid = JSON.parse(scan.ingredientsToAvoid); } catch { /* no-op */ }
-  try { if (scan.ingredientsToSeek) ingredientsToSeek = JSON.parse(scan.ingredientsToSeek); } catch { /* no-op */ }
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
@@ -80,28 +75,17 @@ export default async function ScanResultPage({
         <div className="absolute inset-0" style={{
           background: "linear-gradient(to bottom, rgba(12,9,6,0.2) 0%, transparent 40%, rgba(12,9,6,0.85) 100%)"
         }} />
-        {scan.washState && (
-          <div className="absolute bottom-4 left-4">
-            <WashStateBadge
-              washState={scan.washState as WashState}
-              confidence={scan.washStateConfidence}
-            />
-          </div>
-        )}
       </div>
 
       {/* Client section */}
       <ScanResultClient
         curlType={scan.curlType as CurlType | null}
-        curlTypeReasoning={scan.curlTypeReasoning ?? null}
         curlUniformity={scan.curlUniformity ?? null}
         thickness={scan.thickness}
         density={scan.density}
         porosity={scan.porosity}
-        porosityReasoning={scan.porosityReasoning ?? null}
         elasticity={scan.elasticity ?? null}
         proteinMoistureBalance={scan.proteinMoistureBalance as ProteinMoistureBalance | null}
-        proteinMoistureReasoning={scan.proteinMoistureReasoning ?? null}
         scalpHealth={scan.scalpHealth ?? null}
         growthStage={scan.growthStage ?? null}
         healthScore={scan.healthScore}
@@ -116,10 +100,7 @@ export default async function ScanResultPage({
         environmentalStress={scan.environmentalStress ?? null}
         environmentalNotes={scan.environmentalNotes ?? null}
         aiSummary={scan.aiSummary}
-        washStateReasoning={scan.washStateReasoning}
         routineSteps={routineSteps}
-        ingredientsToAvoid={ingredientsToAvoid}
-        ingredientsToSeek={ingredientsToSeek}
         products={products}
       />
     </div>

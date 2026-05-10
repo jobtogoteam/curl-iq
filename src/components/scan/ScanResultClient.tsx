@@ -2,9 +2,8 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Sparkles, FileText, ChevronDown, ShieldCheck, ShieldX,
+  Sparkles, ChevronDown, ShieldCheck, ShieldX,
   Leaf, FlaskConical, Zap, Star,
-  CheckCircle2, XCircle,
 } from "lucide-react";
 import { MetricBar } from "@/components/scan/MetricBar";
 import { ProductCard } from "@/components/products/ProductCard";
@@ -21,15 +20,12 @@ import { spring, smooth, fadeUp, staggerSections, useMotion } from "@/lib/motion
 
 interface Props {
   curlType: CurlType | null;
-  curlTypeReasoning: string | null;
   curlUniformity: string | null;
   thickness: string | null;
   density: string | null;
   porosity: string | null;
-  porosityReasoning: string | null;
   elasticity: string | null;
   proteinMoistureBalance: ProteinMoistureBalance | null;
-  proteinMoistureReasoning: string | null;
   scalpHealth: string | null;
   growthStage: string | null;
   healthScore: number | null;
@@ -44,10 +40,7 @@ interface Props {
   environmentalStress: string | null;
   environmentalNotes: string | null;
   aiSummary: string | null;
-  washStateReasoning: string | null;
   routineSteps: RoutineStep[];
-  ingredientsToAvoid: string[];
-  ingredientsToSeek: string[];
   products: ProductRecommendation[];
 }
 
@@ -72,7 +65,7 @@ const PM_COLOR_VARS: Record<ProteinMoistureBalance, string> = {
   unknown:          "var(--pm-unknown)",
 };
 
-function ProteinMoistureMeter({ balance, reasoning }: { balance: ProteinMoistureBalance; reasoning: string | null }) {
+function ProteinMoistureMeter({ balance }: { balance: ProteinMoistureBalance }) {
   const positions: Record<ProteinMoistureBalance, number> = {
     protein_overload: 10,
     balanced: 50,
@@ -112,11 +105,6 @@ function ProteinMoistureMeter({ balance, reasoning }: { balance: ProteinMoisture
           {PROTEIN_MOISTURE_LABELS[balance]}
         </span>
       </div>
-      {reasoning && (
-        <p className="text-[12px] text-text-secondary leading-relaxed mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
-          {reasoning}
-        </p>
-      )}
     </div>
   );
 }
@@ -194,15 +182,12 @@ function RoutineCard({ step, index }: { step: RoutineStep; index: number }) {
 
 export function ScanResultClient({
   curlType,
-  curlTypeReasoning,
   curlUniformity,
   thickness,
   density,
   porosity,
-  porosityReasoning,
   elasticity,
   proteinMoistureBalance,
-  proteinMoistureReasoning,
   scalpHealth,
   growthStage,
   healthScore,
@@ -217,13 +202,9 @@ export function ScanResultClient({
   environmentalStress,
   environmentalNotes,
   aiSummary,
-  washStateReasoning,
   routineSteps,
-  ingredientsToAvoid,
-  ingredientsToSeek,
   products,
 }: Props) {
-  const [showDetails, setShowDetails] = useState(false);
   const [displayScore, setDisplayScore] = useState(0);
   const { shouldReduce } = useMotion();
 
@@ -490,7 +471,7 @@ export function ScanResultClient({
       {proteinMoistureBalance && proteinMoistureBalance !== "unknown" && (
         <motion.div variants={fadeUp} className="mb-6">
           <SectionLabel>Protein–Moisture Balance</SectionLabel>
-          <ProteinMoistureMeter balance={proteinMoistureBalance} reasoning={proteinMoistureReasoning} />
+          <ProteinMoistureMeter balance={proteinMoistureBalance} />
         </motion.div>
       )}
 
@@ -506,82 +487,6 @@ export function ScanResultClient({
         </motion.div>
       )}
 
-      {/* Ingredient Guide */}
-      {(ingredientsToAvoid.length > 0 || ingredientsToSeek.length > 0) && (
-        <motion.div variants={fadeUp} className="mb-6">
-          <SectionLabel>Ingredient Guide</SectionLabel>
-          <div className="flex flex-col gap-3">
-            {ingredientsToSeek.length > 0 && (
-              <div
-                className="rounded-2xl p-4"
-                style={{
-                  background: "color-mix(in srgb, var(--sage) 5%, transparent)",
-                  border: "1px solid color-mix(in srgb, var(--sage) 18%, transparent)",
-                }}
-              >
-                <div className="flex items-center gap-2 mb-2.5">
-                  <CheckCircle2 size={13} style={{ color: "var(--sage)" }} />
-                  <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--sage)" }}>
-                    Look for these
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {ingredientsToSeek.map((ing, i) => (
-                    <motion.span
-                      key={i}
-                      initial={shouldReduce ? false : { opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={shouldReduce ? { duration: 0 } : { delay: i * 0.045, duration: 0.22, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-                      className="text-[11px] font-medium px-2.5 py-1 rounded-full"
-                      style={{
-                        background: "color-mix(in srgb, var(--sage) 10%, transparent)",
-                        color: "var(--sage)",
-                        border: "1px solid color-mix(in srgb, var(--sage) 18%, transparent)",
-                      }}
-                    >
-                      {ing}
-                    </motion.span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {ingredientsToAvoid.length > 0 && (
-              <div
-                className="rounded-2xl p-4"
-                style={{
-                  background: "color-mix(in srgb, var(--error) 4%, transparent)",
-                  border: "1px solid color-mix(in srgb, var(--error) 12%, transparent)",
-                }}
-              >
-                <div className="flex items-center gap-2 mb-2.5">
-                  <XCircle size={13} style={{ color: "var(--error)" }} />
-                  <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--error)" }}>
-                    Avoid these
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {ingredientsToAvoid.map((ing, i) => (
-                    <motion.span
-                      key={i}
-                      initial={shouldReduce ? false : { opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={shouldReduce ? { duration: 0 } : { delay: i * 0.045, duration: 0.22, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-                      className="text-[11px] font-medium px-2.5 py-1 rounded-full"
-                      style={{
-                        background: "color-mix(in srgb, var(--error) 8%, transparent)",
-                        color: "var(--error)",
-                        border: "1px solid color-mix(in srgb, var(--error) 16%, transparent)",
-                      }}
-                    >
-                      {ing}
-                    </motion.span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      )}
 
       {/* Environmental notes */}
       {environmentalNotes && environmentalStress && environmentalStress !== "none" && (
@@ -605,55 +510,6 @@ export function ScanResultClient({
         </motion.div>
       )}
 
-      {/* Clinical reasoning (collapsible) */}
-      {(washStateReasoning || curlTypeReasoning || porosityReasoning) && (
-        <motion.div variants={fadeUp} className="mb-6">
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            className="w-full flex items-center justify-between py-3 px-4 rounded-xl transition-colors"
-            style={{ background: "var(--surface-warm)", border: "1px solid var(--border)" }}
-          >
-            <div className="flex items-center gap-2">
-              <FileText size={13} style={{ color: "var(--text-tertiary)" }} />
-              <span className="text-[12px] font-semibold text-text-secondary">Clinical reasoning</span>
-            </div>
-            <motion.div animate={{ rotate: showDetails ? 180 : 0 }} transition={{ duration: 0.2 }}>
-              <ChevronDown size={14} style={{ color: "var(--text-tertiary)" }} />
-            </motion.div>
-          </button>
-          <AnimatePresence>
-            {showDetails && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                className="overflow-hidden"
-              >
-                <div className="pt-3 flex flex-col gap-3">
-                  {[
-                    washStateReasoning && { label: "Wash state", text: washStateReasoning },
-                    curlTypeReasoning  && { label: "Curl type",  text: curlTypeReasoning  },
-                    porosityReasoning  && { label: "Porosity",   text: porosityReasoning  },
-                  ].filter(Boolean).map((item, i) => (
-                    <motion.div
-                      key={(item as { label: string }).label}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.07, duration: 0.25, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-                      className="px-4 py-3 rounded-xl"
-                      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-                    >
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary mb-1.5">{(item as { label: string }).label}</p>
-                      <p className="text-[12px] text-text-secondary leading-relaxed">{(item as { text: string }).text}</p>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      )}
 
       {/* Product recommendations */}
       <motion.div variants={fadeUp}>

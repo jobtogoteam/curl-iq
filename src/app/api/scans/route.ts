@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+
+export const maxDuration = 120;
 import { db } from "@/db";
 import { scans, productRecommendations } from "@/db/schema";
 import { requireAuth } from "@/lib/auth/session";
@@ -6,7 +8,9 @@ import { analyzeHair } from "@/lib/ai/analyze-hair";
 import { saveUploadedFile } from "@/lib/upload";
 import { rateLimit } from "@/lib/rate-limit";
 import { nanoid } from "nanoid";
-import { desc, eq, asc } from "drizzle-orm";
+import { count, desc, eq, asc } from "drizzle-orm";
+
+const BETA_SCAN_LIMIT = 10;
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,6 +28,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Beta lifetime scan limit + fetch previous scan for score smoothing
+    const [{ total }] = db
+      .select({ total: count() })
+      .from(scans)
+      .where(eq(scans.userId, session.userId))
+      .all();
+    if (total >= BETA_SCAN_LIMIT) {
+      return NextResponse.json(
+        { error: `You've reached the beta limit of ${BETA_SCAN_LIMIT} scans. Thanks for testing Curl IQ!` },
+        { status: 403 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
@@ -35,52 +52,80 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "File too large (max 10MB)" }, { status: 400 });
     }
 
+    // Fetch previous scan scores for consistency smoothing
+    const prevScan = db.select({
+      healthScore: scans.healthScore,
+      hydrationScore: scans.hydrationScore,
+      damageScore: scans.damageScore,
+      frizzScore: scans.frizzScore,
+      definitionScore: scans.definitionScore,
+      heatDamageScore: scans.heatDamageScore,
+      chemicalDamageScore: scans.chemicalDamageScore,
+    }).from(scans)
+      .where(eq(scans.userId, session.userId))
+      .orderBy(desc(scans.createdAt))
+      .limit(1).all()[0] ?? null;
+
+    function smoothScore(newVal: number, prevVal: number | null): number {
+      if (prevVal === null) return newVal;
+      const isExtreme = newVal > 85 || newVal < 20;
+      const newWeight = isExtreme ? 0.85 : 0.65;
+      const blended = Math.round(newWeight * newVal + (1 - newWeight) * prevVal);
+      const maxSwing = isExtreme ? 30 : 18;
+      return Math.max(prevVal - maxSwing, Math.min(prevVal + maxSwing, blended));
+    }
+
     // Save uploaded file
     const { relativePath } = await saveUploadedFile(file, session.userId);
 
     // Run AI analysis
-    const analysis = await analyzeHair(relativePath);
+    const { analysis, usage } = await analyzeHair(relativePath);
 
     const scanId = nanoid();
     const now = Math.floor(Date.now() / 1000);
 
-    // Insert scan with all new fields
+    // Insert scan
     db.insert(scans).values({
       id: scanId,
       userId: session.userId,
       imagePath: relativePath,
       washState: analysis.wash_state,
-      washStateConfidence: analysis.wash_state_confidence,
-      washStateReasoning: analysis.wash_state_reasoning,
+      washStateConfidence: null,
+      washStateReasoning: null,
       curlType: analysis.curl_type,
-      curlTypeConfidence: analysis.curl_type_confidence,
-      curlTypeReasoning: analysis.curl_type_reasoning ?? null,
+      curlTypeConfidence: null,
+      curlTypeReasoning: null,
       curlUniformity: analysis.curl_uniformity ?? null,
       thickness: analysis.thickness,
       density: analysis.density,
       porosity: analysis.porosity,
-      porosityReasoning: analysis.porosity_reasoning ?? null,
+      porosityReasoning: null,
       elasticity: analysis.elasticity_estimate ?? null,
       proteinMoistureBalance: analysis.protein_moisture_balance ?? null,
-      proteinMoistureReasoning: analysis.protein_moisture_reasoning ?? null,
+      proteinMoistureReasoning: null,
       scalpHealth: analysis.scalp_health ?? null,
       growthStage: analysis.growth_stage ?? null,
-      healthScore: analysis.health_score,
-      hydrationScore: analysis.hydration_score,
-      damageScore: analysis.damage_score,
-      frizzScore: analysis.frizz_score,
-      definitionScore: analysis.definition_score,
-      heatDamageScore: analysis.heat_damage_score ?? null,
-      chemicalDamageScore: analysis.chemical_damage_score ?? null,
+      healthScore: smoothScore(analysis.health_score, prevScan?.healthScore ?? null),
+      hydrationScore: smoothScore(analysis.hydration_score, prevScan?.hydrationScore ?? null),
+      damageScore: smoothScore(analysis.damage_score, prevScan?.damageScore ?? null),
+      frizzScore: smoothScore(analysis.frizz_score, prevScan?.frizzScore ?? null),
+      definitionScore: smoothScore(analysis.definition_score, prevScan?.definitionScore ?? null),
+      heatDamageScore: analysis.heat_damage_score != null ? smoothScore(analysis.heat_damage_score, prevScan?.heatDamageScore ?? null) : null,
+      chemicalDamageScore: analysis.chemical_damage_score != null ? smoothScore(analysis.chemical_damage_score, prevScan?.chemicalDamageScore ?? null) : null,
       cgmCompatible: typeof analysis.cgm_compatible === "boolean" ? (analysis.cgm_compatible ? 1 : 0) : null,
       cgmNotes: analysis.cgm_notes ?? null,
       environmentalStress: analysis.environmental_stress ?? null,
       environmentalNotes: analysis.environmental_notes ?? null,
       routineSteps: analysis.routine_steps ? JSON.stringify(analysis.routine_steps) : null,
-      ingredientsToAvoid: analysis.ingredients_to_avoid ? JSON.stringify(analysis.ingredients_to_avoid) : null,
-      ingredientsToSeek: analysis.ingredients_to_seek ? JSON.stringify(analysis.ingredients_to_seek) : null,
+      ingredientsToAvoid: null,
+      ingredientsToSeek: null,
       aiSummary: analysis.summary,
       aiRawResponse: JSON.stringify(analysis),
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      cacheWriteTokens: usage.cacheWriteTokens,
+      cacheReadTokens: usage.cacheReadTokens,
+      estimatedCostUsd: usage.estimatedCostUsd,
       createdAt: now,
     }).run();
 
@@ -125,8 +170,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     console.error("Scan error:", err);
+    // Surface user-facing errors from the AI layer directly
+    const message = err instanceof Error ? err.message : null;
+    const isUserFacing = message && !message.includes("ANTHROPIC") && !message.includes("fetch");
     return NextResponse.json(
-      { error: "Analysis failed. Please try again." },
+      { error: isUserFacing ? message : "Analysis failed. Please try again." },
       { status: 500 }
     );
   }

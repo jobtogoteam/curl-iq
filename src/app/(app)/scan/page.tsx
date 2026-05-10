@@ -3,10 +3,30 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
 import { Camera, Sun, Droplets, ScanSearch, FlaskConical, X } from "lucide-react";
 import { spring, smooth, useMotion } from "@/lib/motion";
 import { startScan, getPendingScan, popResolvedScan, clearScan } from "@/lib/scan-store";
+
+function compressImage(file: File, maxDim = 1920, quality = 0.85): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => resolve(new File([blob!], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" })),
+        "image/jpeg",
+        quality
+      );
+    };
+    img.src = url;
+  });
+}
 
 const ANALYSIS_MESSAGES = [
   "Reading your curl pattern…",
@@ -59,9 +79,16 @@ export default function ScanPage() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [scansUsed, setScansUsed] = useState<number | null>(null);
+  const BETA_LIMIT = 10;
+
   useEffect(() => {
-    fetch("/api/auth/me").then(r => r.json()).then(d => {
-      if (d.user?.isDemo) setIsDemo(true);
+    Promise.all([
+      fetch("/api/auth/me").then(r => r.json()),
+      fetch("/api/scans").then(r => r.json()),
+    ]).then(([me, scansData]) => {
+      if (me.user?.isDemo) setIsDemo(true);
+      if (Array.isArray(scansData.scans)) setScansUsed(scansData.scans.length);
     }).catch(() => {});
   }, []);
 
@@ -71,11 +98,12 @@ export default function ScanPage() {
     return () => clearInterval(iv);
   }, [loading]);
 
-  function handleFileSelected(f: File) {
+  async function handleFileSelected(f: File) {
     if (!f.type.startsWith("image/")) return;
-    setFile(f);
+    const compressed = await compressImage(f);
+    setFile(compressed);
     setError("");
-    setPreviewUrl(URL.createObjectURL(f));
+    setPreviewUrl(URL.createObjectURL(compressed));
   }
 
   function handleClear() {
@@ -147,6 +175,13 @@ export default function ScanPage() {
         <p className="text-[13px] mt-1" style={{ color: "var(--text-secondary)" }}>
           {isDemo ? "Demo mode — upload any photo to try the experience" : "Get personalised curl analysis powered by AI"}
         </p>
+        {!isDemo && scansUsed !== null && (
+          <p className="text-[12px] mt-1.5 font-medium" style={{ color: scansUsed >= BETA_LIMIT ? "var(--error)" : "var(--text-tertiary)" }}>
+            {scansUsed >= BETA_LIMIT
+              ? `Beta limit reached (${BETA_LIMIT}/${BETA_LIMIT} scans used)`
+              : `${scansUsed} / ${BETA_LIMIT} beta scans used`}
+          </p>
+        )}
       </motion.div>
 
       {/* Upload zone / preview */}
@@ -168,7 +203,8 @@ export default function ScanPage() {
               className="relative w-full aspect-square rounded-2xl overflow-hidden"
               style={{ border: "1px solid var(--border-bright)" }}
             >
-              <Image src={previewUrl} alt="Hair photo preview" fill className="object-cover" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={previewUrl} alt="Hair photo preview" className="w-full h-full object-cover" />
               <AnimatePresence>
                 {!isLoading && (
                   <motion.button
@@ -384,7 +420,8 @@ export default function ScanPage() {
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
                 style={{ width: 180, height: 180, border: "1px solid rgba(212,137,92,0.25)" }}
               >
-                <Image src={previewUrl} alt="Scanning" fill className="object-cover" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={previewUrl} alt="Scanning" className="w-full h-full object-cover" />
 
                 {/* Scanning beam */}
                 <motion.div
