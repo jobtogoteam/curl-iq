@@ -6,7 +6,7 @@ export const metadata = {
 };
 
 const EFFECTIVE_DATE = "April 8, 2026";
-const CONTACT_EMAIL = "privacy@curliq.app";
+const CONTACT_EMAIL = "team@job-to-go.com";
 
 export default function PrivacyPage() {
   return (
