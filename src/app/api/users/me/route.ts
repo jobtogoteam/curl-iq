@@ -11,22 +11,15 @@ export async function DELETE() {
     const session = await requireAuth();
     const userId = session.userId;
 
-    // Delete all product recommendations
-    db.delete(productRecommendations).where(eq(productRecommendations.userId, userId)).run();
+    await db.delete(productRecommendations).where(eq(productRecommendations.userId, userId));
+    await db.delete(scans).where(eq(scans.userId, userId));
+    await db.delete(users).where(eq(users.id, userId));
 
-    // Delete all scans
-    db.delete(scans).where(eq(scans.userId, userId)).run();
-
-    // Delete the user
-    db.delete(users).where(eq(users.id, userId)).run();
-
-    // Remove uploaded images
     const uploadsDir = path.join(process.cwd(), "public", "uploads", userId);
     if (fs.existsSync(uploadsDir)) {
       fs.rmSync(uploadsDir, { recursive: true, force: true });
     }
 
-    // Destroy session
     const iron = await getSession();
     iron.destroy();
 

@@ -50,12 +50,11 @@ export async function POST(req: NextRequest) {
           .slice(0, 10)
       : [];
 
-    const [existing] = db
+    const [existing] = await db
       .select()
       .from(users)
       .where(eq(users.email, email.toLowerCase().trim()))
-      .limit(1)
-      .all();
+      .limit(1);
 
     if (existing) {
       return NextResponse.json({ error: "Email already registered" }, { status: 409 });
@@ -63,16 +62,15 @@ export async function POST(req: NextRequest) {
 
     const id = nanoid();
     const passwordHash = await hashPassword(password);
-
     const normalizedEmail = email.toLowerCase().trim();
 
-    db.insert(users).values({
+    await db.insert(users).values({
       id,
       email: normalizedEmail,
       passwordHash,
       displayName: sanitizedName,
       createdAt: Math.floor(Date.now() / 1000),
-    }).run();
+    });
 
     const session = await getSession();
     session.userId = id;

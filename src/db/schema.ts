@@ -1,6 +1,6 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, doublePrecision } from "drizzle-orm/pg-core";
 
-export const users = sqliteTable("users", {
+export const users = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
@@ -8,40 +8,28 @@ export const users = sqliteTable("users", {
   createdAt: integer("created_at").notNull(),
 });
 
-export const scans = sqliteTable("scans", {
+export const scans = pgTable("scans", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
     .references(() => users.id),
   imagePath: text("image_path").notNull(),
-  washState: text("wash_state", {
-    enum: ["just_washed", "minutes_after", "hours_after", "dry", "unknown"],
-  }),
+  washState: text("wash_state"),
   washStateConfidence: integer("wash_state_confidence"),
   washStateReasoning: text("wash_state_reasoning"),
-  curlType: text("curl_type", {
-    enum: ["2a", "2b", "2c", "3a", "3b", "3c", "4a", "4b", "4c"],
-  }),
+  curlType: text("curl_type"),
   curlTypeConfidence: integer("curl_type_confidence"),
   curlTypeReasoning: text("curl_type_reasoning"),
-  curlUniformity: text("curl_uniformity", {
-    enum: ["uniform", "mixed", "highly_varied"],
-  }),
-  thickness: text("thickness", { enum: ["fine", "medium", "coarse"] }),
-  density: text("density", { enum: ["low", "medium", "high"] }),
-  porosity: text("porosity", { enum: ["low", "normal", "high"] }),
+  curlUniformity: text("curl_uniformity"),
+  thickness: text("thickness"),
+  density: text("density"),
+  porosity: text("porosity"),
   porosityReasoning: text("porosity_reasoning"),
-  elasticity: text("elasticity", { enum: ["low", "normal", "high"] }),
-  proteinMoistureBalance: text("protein_moisture_balance", {
-    enum: ["balanced", "protein_overload", "moisture_overload", "unknown"],
-  }),
+  elasticity: text("elasticity"),
+  proteinMoistureBalance: text("protein_moisture_balance"),
   proteinMoistureReasoning: text("protein_moisture_reasoning"),
-  scalpHealth: text("scalp_health", {
-    enum: ["not_visible", "healthy", "dry", "oily", "flaky", "irritated"],
-  }),
-  growthStage: text("growth_stage", {
-    enum: ["healthy_growth", "breakage_concern", "transitioning", "color_treated", "heat_styled", "unknown"],
-  }),
+  scalpHealth: text("scalp_health"),
+  growthStage: text("growth_stage"),
   healthScore: integer("health_score"),
   hydrationScore: integer("hydration_score"),
   damageScore: integer("damage_score"),
@@ -49,27 +37,24 @@ export const scans = sqliteTable("scans", {
   definitionScore: integer("definition_score"),
   heatDamageScore: integer("heat_damage_score"),
   chemicalDamageScore: integer("chemical_damage_score"),
-  cgmCompatible: integer("cgm_compatible"), // 0 or 1
+  cgmCompatible: integer("cgm_compatible"),
   cgmNotes: text("cgm_notes"),
-  environmentalStress: text("environmental_stress", {
-    enum: ["none", "mild", "moderate", "severe"],
-  }),
+  environmentalStress: text("environmental_stress"),
   environmentalNotes: text("environmental_notes"),
-  routineSteps: text("routine_steps"), // JSON array
-  ingredientsToAvoid: text("ingredients_to_avoid"), // JSON array
-  ingredientsToSeek: text("ingredients_to_seek"), // JSON array
+  routineSteps: text("routine_steps"),
+  ingredientsToAvoid: text("ingredients_to_avoid"),
+  ingredientsToSeek: text("ingredients_to_seek"),
   aiSummary: text("ai_summary"),
   aiRawResponse: text("ai_raw_response"),
-  // Token usage & cost tracking
   inputTokens: integer("input_tokens"),
   outputTokens: integer("output_tokens"),
   cacheWriteTokens: integer("cache_write_tokens"),
   cacheReadTokens: integer("cache_read_tokens"),
-  estimatedCostUsd: real("estimated_cost_usd"),
+  estimatedCostUsd: doublePrecision("estimated_cost_usd"),
   createdAt: integer("created_at").notNull(),
 });
 
-export const productRecommendations = sqliteTable("product_recommendations", {
+export const productRecommendations = pgTable("product_recommendations", {
   id: text("id").primaryKey(),
   scanId: text("scan_id")
     .notNull()
@@ -79,23 +64,13 @@ export const productRecommendations = sqliteTable("product_recommendations", {
     .references(() => users.id),
   productName: text("product_name").notNull(),
   brand: text("brand"),
-  category: text("category", {
-    enum: [
-      "shampoo",
-      "conditioner",
-      "leave-in",
-      "curl-cream",
-      "gel",
-      "oil",
-      "mask",
-    ],
-  }).notNull(),
-  keyIngredients: text("key_ingredients").notNull(), // JSON array
+  category: text("category").notNull(),
+  keyIngredients: text("key_ingredients").notNull(),
   reason: text("reason").notNull(),
-  priority: integer("priority").notNull(), // 1=high, 2=medium, 3=low
-  cgmSafe: integer("cgm_safe"), // 0 or 1
-  priceRange: text("price_range"),   // "$" | "$$" | "$$$"
-  whereToBuy: text("where_to_buy"), // JSON string[]
+  priority: integer("priority").notNull(),
+  cgmSafe: integer("cgm_safe"),
+  priceRange: text("price_range"),
+  whereToBuy: text("where_to_buy"),
   createdAt: integer("created_at").notNull(),
 });
 
@@ -104,5 +79,4 @@ export type NewUser = typeof users.$inferInsert;
 export type Scan = typeof scans.$inferSelect;
 export type NewScan = typeof scans.$inferInsert;
 export type ProductRecommendation = typeof productRecommendations.$inferSelect;
-export type NewProductRecommendation =
-  typeof productRecommendations.$inferInsert;
+export type NewProductRecommendation = typeof productRecommendations.$inferInsert;

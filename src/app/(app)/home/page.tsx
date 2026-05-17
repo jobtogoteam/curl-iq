@@ -31,19 +31,20 @@ export default async function HomePage() {
   const session = await getSession();
   if (!session.userId) redirect("/login");
 
-  const latestScan = db.select().from(scans)
+  const [latestScan] = await db.select().from(scans)
     .where(eq(scans.userId, session.userId))
-    .orderBy(desc(scans.createdAt)).limit(1).all()[0];
+    .orderBy(desc(scans.createdAt)).limit(1);
 
   const latestProducts = latestScan
-    ? db.select().from(productRecommendations)
+    ? await db.select().from(productRecommendations)
         .where(eq(productRecommendations.scanId, latestScan.id))
-        .orderBy(productRecommendations.priority).limit(3).all()
+        .orderBy(productRecommendations.priority).limit(3)
     : [];
 
   const firstName = session.displayName.split(" ")[0];
-  const scanCount = db.select({ id: scans.id }).from(scans)
-    .where(eq(scans.userId, session.userId)).all().length;
+  const allScans = await db.select({ id: scans.id }).from(scans)
+    .where(eq(scans.userId, session.userId));
+  const scanCount = allScans.length;
 
   return (
     <HomeClient

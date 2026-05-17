@@ -13,7 +13,7 @@ export default async function HistoryPage() {
   const session = await getSession();
   if (!session.userId) redirect("/login");
 
-  const allScans = db
+  const allScans = await db
     .select({
       id: scans.id,
       createdAt: scans.createdAt,
@@ -26,8 +26,7 @@ export default async function HistoryPage() {
     })
     .from(scans)
     .where(eq(scans.userId, session.userId))
-    .orderBy(asc(scans.createdAt))
-    .all();
+    .orderBy(asc(scans.createdAt));
 
   const chartData = allScans.map((s) => ({
     date: new Date(s.createdAt * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
@@ -41,7 +40,6 @@ export default async function HistoryPage() {
 
   return (
     <div className="px-5 pt-14 pb-6" style={{ background: "var(--bg)" }}>
-      {/* Header */}
       <div className="mb-8">
         <h1
           className="font-display"
@@ -54,7 +52,6 @@ export default async function HistoryPage() {
         </p>
       </div>
 
-      {/* Chart */}
       <div
         className="rounded-2xl mb-8 p-5"
         style={{
@@ -72,7 +69,6 @@ export default async function HistoryPage() {
         <ProgressChart data={chartData} />
       </div>
 
-      {/* Scan grid */}
       {allScans.length === 0 ? (
         <EmptyState
           icon={<Camera size={26} style={{ color: "var(--text-tertiary)" }} strokeWidth={1.5} />}

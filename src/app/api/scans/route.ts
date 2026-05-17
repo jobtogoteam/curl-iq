@@ -28,12 +28,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Beta lifetime scan limit + fetch previous scan for score smoothing
-    const [{ total }] = db
+    // Beta lifetime scan limit
+    const [{ total }] = await db
       .select({ total: count() })
       .from(scans)
-      .where(eq(scans.userId, session.userId))
-      .all();
+      .where(eq(scans.userId, session.userId));
+
     if (total >= BETA_SCAN_LIMIT) {
       return NextResponse.json(
         { error: `You've reached the beta limit of ${BETA_SCAN_LIMIT} scans. Thanks for testing Curl IQ!` },
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch previous scan scores for consistency smoothing
-    const prevScan = db.select({
+    const [prevScan] = await db.select({
       healthScore: scans.healthScore,
       hydrationScore: scans.hydrationScore,
       damageScore: scans.damageScore,
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     }).from(scans)
       .where(eq(scans.userId, session.userId))
       .orderBy(desc(scans.createdAt))
-      .limit(1).all()[0] ?? null;
+      .limit(1);
 
     function smoothScore(newVal: number, prevVal: number | null): number {
       if (prevVal === null) return newVal;
@@ -75,17 +75,13 @@ export async function POST(req: NextRequest) {
       return Math.max(prevVal - maxSwing, Math.min(prevVal + maxSwing, blended));
     }
 
-    // Save uploaded file
     const { relativePath } = await saveUploadedFile(file, session.userId);
-
-    // Run AI analysis
     const { analysis, usage } = await analyzeHair(relativePath);
 
     const scanId = nanoid();
     const now = Math.floor(Date.now() / 1000);
 
-    // Insert scan
-    db.insert(scans).values({
+    await db.insert(scans).values({
       id: scanId,
       userId: session.userId,
       imagePath: relativePath,
@@ -127,12 +123,11 @@ export async function POST(req: NextRequest) {
       cacheReadTokens: usage.cacheReadTokens,
       estimatedCostUsd: usage.estimatedCostUsd,
       createdAt: now,
-    }).run();
+    });
 
-    // Insert product recommendations
     const products = analysis.product_recommendations ?? [];
     for (const product of products) {
-      db.insert(productRecommendations).values({
+      await db.insert(productRecommendations).values({
         id: nanoid(),
         scanId,
         userId: session.userId,
@@ -146,23 +141,20 @@ export async function POST(req: NextRequest) {
         priceRange: product.price_range ?? null,
         whereToBuy: product.where_to_buy ? JSON.stringify(product.where_to_buy) : null,
         createdAt: now,
-      }).run();
+      });
     }
 
-    // Fetch and return the complete scan with products
-    const [scan] = db
+    const [scan] = await db
       .select()
       .from(scans)
       .where(eq(scans.id, scanId))
-      .limit(1)
-      .all();
+      .limit(1);
 
-    const scanProducts = db
+    const scanProducts = await db
       .select()
       .from(productRecommendations)
       .where(eq(productRecommendations.scanId, scanId))
-      .orderBy(asc(productRecommendations.priority))
-      .all();
+      .orderBy(asc(productRecommendations.priority));
 
     return NextResponse.json({ scan, products: scanProducts });
   } catch (err) {
@@ -170,7 +162,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     console.error("Scan error:", err);
-    // Surface user-facing errors from the AI layer directly
     const message = err instanceof Error ? err.message : null;
     const isUserFacing = message && !message.includes("ANTHROPIC") && !message.includes("fetch");
     return NextResponse.json(
@@ -184,7 +175,7 @@ export async function GET() {
   try {
     const session = await requireAuth();
 
-    const userScans = db
+    const userScans = await db
       .select({
         id: scans.id,
         createdAt: scans.createdAt,
@@ -196,8 +187,7 @@ export async function GET() {
       })
       .from(scans)
       .where(eq(scans.userId, session.userId))
-      .orderBy(desc(scans.createdAt))
-      .all();
+      .orderBy(desc(scans.createdAt));
 
     return NextResponse.json({ scans: userScans });
   } catch (err) {

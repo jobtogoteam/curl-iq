@@ -20,15 +20,15 @@ export default async function ScanResultPage({
 
   const { scanId } = await params;
 
-  const [scan] = db.select().from(scans)
+  const [scan] = await db.select().from(scans)
     .where(and(eq(scans.id, scanId), eq(scans.userId, session.userId)))
-    .limit(1).all();
+    .limit(1);
 
   if (!scan) notFound();
 
-  const products = db.select().from(productRecommendations)
+  const products = await db.select().from(productRecommendations)
     .where(eq(productRecommendations.scanId, scanId))
-    .orderBy(asc(productRecommendations.priority)).all();
+    .orderBy(asc(productRecommendations.priority));
 
   const date = new Date(scan.createdAt * 1000).toLocaleDateString("en-US", {
     month: "long", day: "numeric", year: "numeric",

@@ -8,24 +8,22 @@ export async function GET() {
   try {
     const session = await requireAuth();
 
-    const [latestScan] = db
+    const [latestScan] = await db
       .select({ id: scans.id })
       .from(scans)
       .where(eq(scans.userId, session.userId))
       .orderBy(desc(scans.createdAt))
-      .limit(1)
-      .all();
+      .limit(1);
 
     if (!latestScan) {
       return NextResponse.json({ products: [] });
     }
 
-    const products = db
+    const products = await db
       .select()
       .from(productRecommendations)
       .where(eq(productRecommendations.scanId, latestScan.id))
-      .orderBy(asc(productRecommendations.priority))
-      .all();
+      .orderBy(asc(productRecommendations.priority));
 
     return NextResponse.json({ products });
   } catch (err) {

@@ -6,7 +6,6 @@ import { eq, asc } from "drizzle-orm";
 import { CostDashboard } from "@/components/costs/CostDashboard";
 import { ReceiptText } from "lucide-react";
 
-// Claude Sonnet 4.6 pricing per token
 const PRICING = {
   input:      3.00  / 1_000_000,
   output:     15.00 / 1_000_000,
@@ -18,7 +17,7 @@ export default async function CostsPage() {
   const session = await getSession();
   if (!session.userId) redirect("/login");
 
-  const allScans = db
+  const allScans = await db
     .select({
       id: scans.id,
       createdAt: scans.createdAt,
@@ -30,8 +29,7 @@ export default async function CostsPage() {
     })
     .from(scans)
     .where(eq(scans.userId, session.userId))
-    .orderBy(asc(scans.createdAt))
-    .all();
+    .orderBy(asc(scans.createdAt));
 
   const scanData = allScans.map((s, i) => {
     const inputTokens      = s.inputTokens      ?? 0;
@@ -76,7 +74,6 @@ export default async function CostsPage() {
 
   return (
     <div className="px-5 pt-14 pb-6" style={{ background: "var(--bg)" }}>
-      {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-1">
           <div

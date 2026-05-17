@@ -4,7 +4,6 @@ import { scans } from "@/db/schema";
 import { requireAuth } from "@/lib/auth/session";
 import { eq, desc } from "drizzle-orm";
 
-// Returns the latest demo scan for a demo-mode user — no API call needed
 export async function POST() {
   try {
     const session = await requireAuth();
@@ -13,13 +12,12 @@ export async function POST() {
       return NextResponse.json({ error: "Not in demo mode" }, { status: 403 });
     }
 
-    const [latestScan] = db
+    const [latestScan] = await db
       .select({ id: scans.id })
       .from(scans)
       .where(eq(scans.userId, session.userId))
       .orderBy(desc(scans.createdAt))
-      .limit(1)
-      .all();
+      .limit(1);
 
     if (!latestScan) {
       return NextResponse.json({ error: "No demo scan found" }, { status: 404 });

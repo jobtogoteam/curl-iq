@@ -156,27 +156,24 @@ function ensureDemoImage(userId: string): string {
 export async function POST() {
   try {
     // Check if demo user exists, create if not
-    let [demoUser] = db
+    let [demoUser] = await db
       .select()
       .from(users)
       .where(eq(users.email, DEMO_EMAIL))
-      .limit(1)
-      .all();
+      .limit(1);
 
     if (!demoUser) {
       const id = `demo-${nanoid(12)}`;
       const passwordHash = await hashPassword(nanoid(24));
-      db.insert(users)
-        .values({
-          id,
-          email: DEMO_EMAIL,
-          passwordHash,
-          displayName: DEMO_NAME,
-          createdAt: Math.floor(Date.now() / 1000),
-        })
-        .run();
+      await db.insert(users).values({
+        id,
+        email: DEMO_EMAIL,
+        passwordHash,
+        displayName: DEMO_NAME,
+        createdAt: Math.floor(Date.now() / 1000),
+      });
 
-      [demoUser] = db.select().from(users).where(eq(users.email, DEMO_EMAIL)).limit(1).all();
+      [demoUser] = await db.select().from(users).where(eq(users.email, DEMO_EMAIL)).limit(1);
 
       // Seed 3 demo scans at different dates
       const baseTime = Math.floor(Date.now() / 1000);
@@ -194,7 +191,7 @@ export async function POST() {
       for (let i = 0; i < scanDates.length; i++) {
         const scanId = nanoid();
         const isLatest = i === scanDates.length - 1;
-        db.insert(scans).values({
+        await db.insert(scans).values({
           id: scanId,
           userId: demoUser.id,
           imagePath,
@@ -214,12 +211,12 @@ export async function POST() {
           aiSummary: isLatest ? DEMO_SCAN.aiSummary : null,
           aiRawResponse: null,
           createdAt: scanDates[i],
-        }).run();
+        });
 
         // Seed products only for latest scan
         if (isLatest) {
           for (const product of DEMO_PRODUCTS) {
-            db.insert(productRecommendations).values({
+            await db.insert(productRecommendations).values({
               id: nanoid(),
               scanId,
               userId: demoUser.id,
@@ -233,7 +230,7 @@ export async function POST() {
               priceRange: product.priceRange ?? null,
               whereToBuy: product.whereToBuy ?? null,
               createdAt: scanDates[i],
-            }).run();
+            });
           }
         }
       }

@@ -12,23 +12,21 @@ export async function GET(
     const session = await requireAuth();
     const { scanId } = await params;
 
-    const [scan] = db
+    const [scan] = await db
       .select()
       .from(scans)
       .where(and(eq(scans.id, scanId), eq(scans.userId, session.userId)))
-      .limit(1)
-      .all();
+      .limit(1);
 
     if (!scan) {
       return NextResponse.json({ error: "Scan not found" }, { status: 404 });
     }
 
-    const products = db
+    const products = await db
       .select()
       .from(productRecommendations)
       .where(and(eq(productRecommendations.scanId, scanId), eq(productRecommendations.userId, session.userId)))
-      .orderBy(asc(productRecommendations.priority))
-      .all();
+      .orderBy(asc(productRecommendations.priority));
 
     return NextResponse.json({ scan, products });
   } catch (err) {

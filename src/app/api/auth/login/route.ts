@@ -10,7 +10,6 @@ export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 
-    // 10 login attempts per IP per 15 minutes (brute-force protection)
     const rl = rateLimit(`login:${ip}`, { limit: 10, windowSec: 900 });
     if (!rl.allowed) {
       return NextResponse.json(
@@ -28,12 +27,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    const [user] = db
+    const [user] = await db
       .select()
       .from(users)
       .where(eq(users.email, email.toLowerCase().trim()))
-      .limit(1)
-      .all();
+      .limit(1);
 
     if (!user) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
