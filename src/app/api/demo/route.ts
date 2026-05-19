@@ -5,8 +5,6 @@ import { getSession } from "@/lib/auth/session";
 import { hashPassword } from "@/lib/auth/password";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import fs from "fs";
-import path from "path";
 
 const DEMO_EMAIL = "demo@curliq.app";
 const DEMO_NAME = "Demo User";
@@ -130,28 +128,7 @@ const DEMO_PRODUCTS = [
   },
 ];
 
-// Creates a demo scan image (a simple colored placeholder PNG)
-function ensureDemoImage(userId: string): string {
-  const uploadsDir = path.join(process.cwd(), "public", "uploads", userId);
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-  const imagePath = path.join(uploadsDir, "demo-scan.jpg");
-  if (!fs.existsSync(imagePath)) {
-    // Write a minimal valid JPEG (1×1 pixel, terracotta color)
-    const jpegBytes = Buffer.from(
-      "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoH" +
-      "BwYIDAoMCwsKCwsNCxAQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQME" +
-      "BAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQU" +
-      "FBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQ" +
-      "AQAAAAAAAAAAAAAAAAAAAAD/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAA" +
-      "AAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AJQAB/9k=",
-      "base64"
-    );
-    fs.writeFileSync(imagePath, jpegBytes);
-  }
-  return `uploads/${userId}/demo-scan.jpg`;
-}
+const DEMO_IMAGE_PATH = "demo-scan.jpg";
 
 export async function POST() {
   try {
@@ -186,7 +163,7 @@ export async function POST() {
       const hydrationProgression = [48, 55, 61];
       const frizzProgression = [62, 52, 45];
 
-      const imagePath = ensureDemoImage(demoUser.id);
+      const imagePath = DEMO_IMAGE_PATH;
 
       for (let i = 0; i < scanDates.length; i++) {
         const scanId = nanoid();
@@ -234,9 +211,6 @@ export async function POST() {
           }
         }
       }
-    } else {
-      // Ensure demo image exists (in case uploads dir was cleared)
-      ensureDemoImage(demoUser.id);
     }
 
     // Set session
