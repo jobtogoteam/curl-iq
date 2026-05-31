@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
+import { ScanImage } from "@/components/ui/ScanImage";
 import { db } from "@/db";
 import { scans, productRecommendations } from "@/db/schema";
 import { getSession } from "@/lib/auth/session";
@@ -65,13 +65,7 @@ export default async function ScanResultPage({
 
       {/* Hero photo */}
       <div className="relative w-full aspect-[4/3] overflow-hidden">
-        <Image
-          src={`/${scan.imagePath}`}
-          alt="Hair scan"
-          fill
-          className="object-cover"
-          priority
-        />
+        <ScanImage scanId={scan.id} className="absolute inset-0" objectFit="cover" />
         <div className="absolute inset-0" style={{
           background: "linear-gradient(to bottom, rgba(12,9,6,0.2) 0%, transparent 40%, rgba(12,9,6,0.85) 100%)"
         }} />

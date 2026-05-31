@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "Curl IQ",
   "short_name": "Curl IQ",
   "description": "Know your curls. AI-powered curly hair analysis and tracking.",
@@ -6,8 +7,11 @@
   "orientation": "portrait",
   "background_color": "#0C0906",
   "theme_color": "#0C0906",
-  "start_url": "/",
+  "start_url": "/home",
   "scope": "/",
+  "categories": ["health", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -33,5 +37,7 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
 }

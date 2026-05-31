@@ -102,29 +102,33 @@ export default function ProductsPage() {
           {/* Category filter */}
           {availableCategories.length > 2 && (
             <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide -mx-5 px-5">
-              {availableCategories.map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveCategory(key)}
-                  className="flex-shrink-0 px-4 py-2 rounded-full text-[13px] font-medium transition-all"
-                  style={
-                    activeCategory === key
-                      ? {
-                          background: "var(--primary)",
-                          color: "white",
-                          border: "1px solid var(--primary)",
-                          boxShadow: "0 2px 12px var(--primary-glow)",
-                        }
-                      : {
-                          background: "var(--surface-2)",
-                          color: "var(--text-secondary)",
-                          border: "1px solid var(--border)",
-                        }
-                  }
-                >
-                  {label}
-                </button>
-              ))}
+              {availableCategories.map(({ key, label }) => {
+                const isActive = activeCategory === key;
+                return (
+                  <motion.button
+                    key={key}
+                    onClick={() => setActiveCategory(key)}
+                    className="relative flex-shrink-0 px-4 py-2 rounded-full text-[13px] font-medium overflow-hidden"
+                    style={
+                      isActive
+                        ? { color: "white", border: "1px solid var(--primary)" }
+                        : { background: "var(--surface-2)", color: "var(--text-secondary)", border: "1px solid var(--border)" }
+                    }
+                    whileTap={!shouldReduce ? { scale: 0.93 } : undefined}
+                    transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                  >
+                    {isActive && (
+                      <motion.span
+                        layoutId="cat-pill"
+                        className="absolute inset-0 rounded-full"
+                        style={{ background: "var(--primary)", boxShadow: "0 2px 12px var(--primary-glow)" }}
+                        transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                      />
+                    )}
+                    <span className="relative z-10">{label}</span>
+                  </motion.button>
+                );
+              })}
             </div>
           )}
 

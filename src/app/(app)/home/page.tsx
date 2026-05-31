@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { scans, productRecommendations } from "@/db/schema";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, asc } from "drizzle-orm";
 import { ProductCard } from "@/components/products/ProductCard";
 import { Camera, Sparkles, ChevronRight } from "lucide-react";
 import type { CurlType } from "@/types/hair";
@@ -38,7 +38,7 @@ export default async function HomePage() {
   const latestProducts = latestScan
     ? await db.select().from(productRecommendations)
         .where(eq(productRecommendations.scanId, latestScan.id))
-        .orderBy(productRecommendations.priority).limit(3)
+        .orderBy(asc(productRecommendations.priority)).limit(3)
     : [];
 
   const firstName = session.displayName.split(" ")[0];

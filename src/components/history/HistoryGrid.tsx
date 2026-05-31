@@ -32,7 +32,6 @@ export function HistoryGrid({ scans }: { scans: ScanItem[] }) {
         >
           <ScanThumbnail
             scanId={scan.id}
-            imagePath={scan.imagePath}
             createdAt={scan.createdAt}
             healthScore={scan.healthScore}
             curlType={scan.curlType}

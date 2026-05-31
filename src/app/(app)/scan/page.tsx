@@ -11,6 +11,10 @@ function compressImage(file: File, maxDim = 1920, quality = 0.85): Promise<File>
   return new Promise((resolve) => {
     const img = new window.Image();
     const url = URL.createObjectURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
     img.onload = () => {
       URL.revokeObjectURL(url);
       const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
@@ -19,7 +23,10 @@ function compressImage(file: File, maxDim = 1920, quality = 0.85): Promise<File>
       canvas.height = Math.round(img.height * scale);
       canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(
-        (blob) => resolve(new File([blob!], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" })),
+        (blob) => {
+          if (!blob) { resolve(file); return; }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+        },
         "image/jpeg",
         quality
       );
@@ -48,6 +55,7 @@ export default function ScanPage() {
   const router = useRouter();
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef  = useRef<HTMLInputElement>(null);
+  const blobUrlRef      = useRef<string | null>(null);
 
   const [file,        setFile]        = useState<File | null>(null);
   const [previewUrl,  setPreviewUrl]  = useState<string | null>(null);
@@ -57,6 +65,11 @@ export default function ScanPage() {
   const [msgIndex,    setMsgIndex]    = useState(0);
   const [isDemo,      setIsDemo]      = useState(false);
   const { shouldReduce } = useMotion();
+
+  // Revoke blob URL on unmount to prevent memory leak
+  useEffect(() => {
+    return () => { if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current); };
+  }, []);
 
   // Re-attach to any in-flight scan
   useEffect(() => {
@@ -103,11 +116,14 @@ export default function ScanPage() {
     const compressed = await compressImage(f);
     setFile(compressed);
     setError("");
-    setPreviewUrl(URL.createObjectURL(compressed));
+    if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+    const newUrl = URL.createObjectURL(compressed);
+    blobUrlRef.current = newUrl;
+    setPreviewUrl(newUrl);
   }
 
   function handleClear() {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    if (blobUrlRef.current) { URL.revokeObjectURL(blobUrlRef.current); blobUrlRef.current = null; }
     setFile(null); setPreviewUrl(null); setError("");
   }
 

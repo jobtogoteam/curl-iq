@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
+import { ScanImage } from "@/components/ui/ScanImage";
 import { Camera, Sparkles, ChevronRight, ArrowUpRight, TrendingUp, ReceiptText } from "lucide-react";
 import { fadeUp, staggerContainer, smooth, useMotion } from "@/lib/motion";
 import { MetricBar } from "@/components/scan/MetricBar";
@@ -101,12 +101,11 @@ export function HomeClient({
               >
                 <div className="flex items-stretch">
                   {/* Photo strip */}
-                  <div className="relative w-[90px] flex-shrink-0">
-                    <Image
-                      src={`/${latestScan.imagePath}`}
-                      alt="Latest scan"
-                      fill
-                      className="object-cover"
+                  <div className="relative w-[90px] flex-shrink-0 overflow-hidden">
+                    <ScanImage
+                      scanId={latestScan.id}
+                      className="absolute inset-0"
+                      objectFit="cover"
                     />
                     <div
                       className="absolute inset-0"
@@ -195,7 +194,10 @@ export function HomeClient({
           {/* Progress link */}
           <motion.div variants={fadeUp} className="mb-5">
             <Link href="/history">
-              <div
+              <motion.div
+                whileTap={!shouldReduce ? { scale: 0.97 } : undefined}
+                whileHover={!shouldReduce ? { x: 2 } : undefined}
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 className="flex items-center justify-between px-4 py-3 rounded-xl"
                 style={{
                   background: "var(--surface-2)",
@@ -209,7 +211,7 @@ export function HomeClient({
                   </span>
                 </div>
                 <ArrowUpRight size={13} style={{ color: "var(--text-tertiary)" }} />
-              </div>
+              </motion.div>
             </Link>
           </motion.div>
         </>

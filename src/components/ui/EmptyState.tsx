@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import Link from "next/link";
 
+const MotionLink = motion(Link);
+
 interface EmptyStateProps {
   icon: ReactNode;
   title: string;
@@ -40,8 +42,11 @@ export function EmptyState({ icon, title, description, cta }: EmptyStateProps) {
         {description}
       </p>
       {cta && (
-        <Link
+        <MotionLink
           href={cta.href}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.96 }}
+          transition={{ type: "spring", stiffness: 400, damping: 28 }}
           className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl font-semibold text-[15px] text-white mt-7"
           style={{
             background: "linear-gradient(135deg, var(--primary), var(--primary-dark))",
@@ -49,7 +54,7 @@ export function EmptyState({ icon, title, description, cta }: EmptyStateProps) {
           }}
         >
           {cta.label}
-        </Link>
+        </MotionLink>
       )}
     </motion.div>
   );

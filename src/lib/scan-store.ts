@@ -29,7 +29,11 @@ export function startScan(file: File, previewUrl: string): Promise<string> {
     const res = await fetch("/api/scans", { method: "POST", body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Analysis failed. Please try again.");
-    return data.scan.id as string;
+    const scanId = data.scan.id as string;
+    // Persist photo on-device so history/result pages can display it
+    const { saveImage } = await import("./image-store");
+    await saveImage(scanId, file);
+    return scanId;
   })();
 
   // Cache resolved value so remounts can redirect immediately if already done

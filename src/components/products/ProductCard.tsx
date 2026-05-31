@@ -46,7 +46,8 @@ export function ProductCard({ product }: { product: ProductRecommendation }) {
   return (
     <motion.div
       whileHover={!shouldReduce ? { y: -3 } : undefined}
-      transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+      whileTap={!shouldReduce ? { scale: 0.97 } : undefined}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
       className="rounded-2xl overflow-hidden cursor-pointer"
       style={{
         background: "var(--surface-2)",

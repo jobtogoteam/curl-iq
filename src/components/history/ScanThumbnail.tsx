@@ -1,21 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { useMotion } from "@/lib/motion";
+import { ScanImage } from "@/components/ui/ScanImage";
 import type { CurlType } from "@/types/hair";
 
 interface ScanThumbnailProps {
   scanId: string;
-  imagePath: string;
   createdAt: number;
   healthScore: number | null;
   curlType: CurlType | null;
 }
 
-export function ScanThumbnail({ scanId, imagePath, createdAt, healthScore, curlType }: ScanThumbnailProps) {
+export function ScanThumbnail({ scanId, createdAt, healthScore, curlType }: ScanThumbnailProps) {
   const label = new Date(createdAt * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   const { shouldReduce } = useMotion();
 
@@ -28,16 +27,11 @@ export function ScanThumbnail({ scanId, imagePath, createdAt, healthScore, curlT
         whileTap={!shouldReduce ? { scale: 0.95 } : undefined}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
       >
-        {imagePath && imagePath !== "placeholder" ? (
-          <Image
-            src={`/${imagePath}`}
-            alt={`Hair scan from ${label}`}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #2a1f15 0%, #1a1108 100%)" }} />
-        )}
+        <ScanImage
+          scanId={scanId}
+          className="absolute inset-0 group-hover:scale-105 transition-transform duration-500"
+          objectFit="cover"
+        />
         <div
           className="absolute inset-0"
           style={{ background: "linear-gradient(to top, rgba(12,9,6,0.85) 0%, transparent 55%)" }}
@@ -61,7 +55,7 @@ export function ScanThumbnail({ scanId, imagePath, createdAt, healthScore, curlT
             </span>
           </div>
         )}
-      </div>
+      </motion.div>
     </Link>
   );
 }
