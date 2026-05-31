@@ -10,6 +10,7 @@ function getDb() {
     const client = postgres(process.env.DATABASE_URL!, {
       max: 1,
       ssl: "require",
+      prepare: false, // required for Supabase transaction pooler (port 6543)
     });
     _db = drizzle(client, { schema });
   }
