@@ -128,7 +128,6 @@ const DEMO_PRODUCTS = [
   },
 ];
 
-const DEMO_IMAGE_PATH = "demo-scan.jpg";
 
 export async function POST() {
   try {
@@ -163,7 +162,7 @@ export async function POST() {
       const hydrationProgression = [48, 55, 61];
       const frizzProgression = [62, 52, 45];
 
-      const imagePath = DEMO_IMAGE_PATH;
+      const imagePath = "demo/demo-scan.jpg";
 
       for (let i = 0; i < scanDates.length; i++) {
         const scanId = nanoid();

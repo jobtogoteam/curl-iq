@@ -30,3 +30,5 @@ Thumbs.db
 
 # Test scripts
 test-fork.js
+
+.vercel
