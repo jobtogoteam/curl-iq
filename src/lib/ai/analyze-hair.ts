@@ -1,6 +1,4 @@
 import Anthropic from "@anthropic-ai/sdk";
-import fs from "fs";
-import path from "path";
 import { HAIR_ANALYSIS_SYSTEM_PROMPT, HAIR_ANALYSIS_USER_PROMPT } from "./prompts";
 import type { HairAnalysis } from "@/types/hair";
 
@@ -29,22 +27,11 @@ export interface HairAnalysisResult {
   usage: TokenUsage;
 }
 
-export async function analyzeHair(imagePath: string): Promise<HairAnalysisResult> {
-  if (!imagePath.startsWith("uploads/") || imagePath.includes("..")) {
-    throw new Error("Invalid image path");
-  }
-  const absolutePath = path.join(process.cwd(), "public", imagePath);
-  const imageBuffer = fs.readFileSync(absolutePath);
-  const base64Image = imageBuffer.toString("base64");
-
-  // Determine media type from extension
-  const ext = path.extname(imagePath).toLowerCase();
-  const mediaType =
-    ext === ".png"
-      ? "image/png"
-      : ext === ".webp"
-      ? "image/webp"
-      : "image/jpeg";
+export async function analyzeHair(
+  image: { buffer: Buffer; mediaType: string }
+): Promise<HairAnalysisResult> {
+  const base64Image = image.buffer.toString("base64");
+  const mediaType = image.mediaType as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
   const response = await anthropic.beta.messages.create({
     betas: ["prompt-caching-2024-07-31"],
@@ -80,13 +67,11 @@ export async function analyzeHair(imagePath: string): Promise<HairAnalysisResult
 
   const rawText = response.content[0].type === "text" ? response.content[0].text : "";
 
-  // Log stop reason and raw length to diagnose truncation
   console.error("[analyzeHair] stop_reason:", response.stop_reason, "| raw chars:", rawText.length);
   if (response.stop_reason === "max_tokens") {
     console.error("[analyzeHair] TRUNCATED — response hit max_tokens limit");
   }
 
-  // Extract the JSON object regardless of surrounding prose or code fences
   const jsonMatch = rawText.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     console.error("[analyzeHair] No JSON object found in response. Raw:\n", rawText.slice(0, 500));
@@ -101,7 +86,6 @@ export async function analyzeHair(imagePath: string): Promise<HairAnalysisResult
     throw new Error("We couldn't read the AI response. Please try again.");
   }
 
-  // Graceful decline: image not suitable for hair analysis
   if (
     typeof parsed === "object" &&
     parsed !== null &&
@@ -117,7 +101,6 @@ export async function analyzeHair(imagePath: string): Promise<HairAnalysisResult
 
   validateHairAnalysis(parsed);
 
-  // Capture token usage and compute estimated cost
   const u = response.usage as {
     input_tokens: number;
     output_tokens: number;

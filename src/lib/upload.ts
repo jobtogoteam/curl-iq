@@ -1,34 +1,21 @@
-import fs from "fs";
-import path from "path";
-import { nanoid } from "nanoid";
+const ALLOWED_MIMES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 
-export async function saveUploadedFile(
-  file: File,
-  userId: string
-): Promise<{ relativePath: string; url: string }> {
-  const uploadsDir = path.join(process.cwd(), "public", "uploads", userId);
+export interface UploadedFile {
+  buffer: Buffer;
+  mediaType: string;
+}
 
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-
-  const allowedMimes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
-  if (!allowedMimes.includes(file.type)) {
+export async function readUploadedFile(file: File): Promise<UploadedFile> {
+  if (!ALLOWED_MIMES.includes(file.type)) {
     throw new Error("Invalid file type. Please upload a JPEG, PNG, or WebP image.");
   }
 
-  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const allowedExts = ["jpg", "jpeg", "png", "webp", "heic", "heif"];
-  const safeExt = allowedExts.includes(ext) ? ext : "jpg";
-
-  const filename = `${nanoid()}.${safeExt}`;
-  const fullPath = path.join(uploadsDir, filename);
-
   const arrayBuffer = await file.arrayBuffer();
-  fs.writeFileSync(fullPath, Buffer.from(arrayBuffer));
+  const buffer = Buffer.from(arrayBuffer);
 
-  const relativePath = `uploads/${userId}/${filename}`;
-  const url = `${process.env.NEXT_PUBLIC_APP_URL}/${relativePath}`;
+  const mediaType = file.type === "image/heic" || file.type === "image/heif"
+    ? "image/jpeg"
+    : file.type;
 
-  return { relativePath, url };
+  return { buffer, mediaType };
 }

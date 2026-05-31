@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { scans, productRecommendations } from "@/db/schema";
 import { requireAuth } from "@/lib/auth/session";
 import { analyzeHair } from "@/lib/ai/analyze-hair";
-import { saveUploadedFile } from "@/lib/upload";
+import { readUploadedFile } from "@/lib/upload";
 import { rateLimit } from "@/lib/rate-limit";
 import { nanoid } from "nanoid";
 import { count, desc, eq, asc } from "drizzle-orm";
@@ -75,8 +75,8 @@ export async function POST(req: NextRequest) {
       return Math.max(prevVal - maxSwing, Math.min(prevVal + maxSwing, blended));
     }
 
-    const { relativePath } = await saveUploadedFile(file, session.userId);
-    const { analysis, usage } = await analyzeHair(relativePath);
+    const uploadedFile = await readUploadedFile(file);
+    const { analysis, usage } = await analyzeHair(uploadedFile);
 
     const scanId = nanoid();
     const now = Math.floor(Date.now() / 1000);
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     await db.insert(scans).values({
       id: scanId,
       userId: session.userId,
-      imagePath: relativePath,
+      imagePath: "placeholder",
       washState: analysis.wash_state,
       washStateConfidence: null,
       washStateReasoning: null,

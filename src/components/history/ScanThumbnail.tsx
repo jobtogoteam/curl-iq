@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Heart } from "lucide-react";
+import { motion } from "framer-motion";
+import { useMotion } from "@/lib/motion";
 import type { CurlType } from "@/types/hair";
 
 interface ScanThumbnailProps {
@@ -13,19 +17,27 @@ interface ScanThumbnailProps {
 
 export function ScanThumbnail({ scanId, imagePath, createdAt, healthScore, curlType }: ScanThumbnailProps) {
   const label = new Date(createdAt * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const { shouldReduce } = useMotion();
 
   return (
     <Link href={`/scan/${scanId}`} className="block group">
-      <div
+      <motion.div
         className="relative aspect-square rounded-2xl overflow-hidden"
         style={{ border: "1px solid var(--border-bright)" }}
+        whileHover={!shouldReduce ? { y: -3, boxShadow: "0 8px 24px rgba(0,0,0,0.35)" } : undefined}
+        whileTap={!shouldReduce ? { scale: 0.95 } : undefined}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
       >
-        <Image
-          src={`/${imagePath}`}
-          alt={`Hair scan from ${label}`}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-        />
+        {imagePath && imagePath !== "placeholder" ? (
+          <Image
+            src={`/${imagePath}`}
+            alt={`Hair scan from ${label}`}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #2a1f15 0%, #1a1108 100%)" }} />
+        )}
         <div
           className="absolute inset-0"
           style={{ background: "linear-gradient(to top, rgba(12,9,6,0.85) 0%, transparent 55%)" }}
